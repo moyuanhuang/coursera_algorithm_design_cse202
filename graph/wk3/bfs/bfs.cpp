@@ -1,12 +1,37 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+using namespace std;
 
-using std::vector;
-using std::queue;
+int distance(vector<vector<int> > &adj, int source, int target) {
+  queue<int> q;
+  vector<bool> visited(adj.size(), false);
+  q.push(source);
 
-int distance(vector<vector<int> > &adj, int s, int t) {
-  //write your code here
+  int result = 0;
+
+  while(!q.empty()) {
+    int size = q.size();
+    result++;
+
+    for(int i = 0; i < size; i++) {
+      int node = q.front();
+      q.pop();    
+      visited[node] = true;  
+
+      for(int i = 0; i < adj[node].size(); i++) {
+        int neighbor = adj[node][i];
+        if(!visited[neighbor]) {
+          if(neighbor == target) {
+            return result;
+          }
+
+          q.push(neighbor);
+        }
+      }
+    }
+  }
+
   return -1;
 }
 

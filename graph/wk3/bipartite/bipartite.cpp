@@ -1,13 +1,28 @@
 #include <iostream>
 #include <vector>
 #include <queue>
-
-using std::vector;
-using std::queue;
+using namespace std;
 
 int bipartite(vector<vector<int> > &adj) {
-  //write your code here
-  return -1;
+  queue<int> q;
+  vector<int> color(adj.size(), 0);
+  color[0] = 1;
+  q.push(0);
+  while(!q.empty()) {
+    int node = q.front();
+    q.pop();
+    for(int i = 0; i < adj[node].size(); i++) {
+      int neighbor = adj[node][i];
+      if (color[neighbor] == 0) {
+        if (color[node] == 1) color[neighbor] = 2;
+        else                  color[neighbor] = 1;
+        q.push(neighbor);
+      }
+      else if (color[neighbor] == color[node])
+        return 0;
+    }
+  }
+  return 1;
 }
 
 int main() {
