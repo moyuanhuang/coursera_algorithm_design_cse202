@@ -1,194 +1,144 @@
 #include <iostream>
 #include <limits>
-#include <map>
-#include <set>
-#include <tuple>
+#include <unordered_map>
+#include <unordered_set>
+// #include <pair>
 #include <vector>
 #include <cstdint>
 
-using std::vector;
-using std::map;
+using namespace std;
 
-struct Node
-{
-  Node() : isinf( true ), val( 0 ) {}
-  explicit Node( std::int64_t val ) : isinf( false ), val( val ) {}
-  bool isinf;
-  std::int64_t val;
+struct Vertex{
+  long long val;
+  bool inf;
+	Vertex() : inf( true ), val( 0 ) {}
+	Vertex( long long val ) : inf( false ), val( val ) {}
 };
 
-inline Node operator+( const Node &n, std::int64_t c )
-{
-  if ( n.isinf )
-    return Node();
-
-  return Node( n.val + c );
+inline Vertex operator+( const Vertex &v, long long add_on){
+	if(v.inf)
+		return Vertex();
+	return Vertex(v.val + add_on);
 }
 
-inline bool operator>( const Node &l, const Node &r )
-{
-  if ( !l.isinf && !r.isinf )
-    return l.val > r.val;
-  else if ( l.isinf && !r.isinf )
-    return true;
-  else if ( !l.isinf && r.isinf )
-    return false;
-  else
-    return false;
+inline bool operator>( const Vertex &n1, const Vertex &n2){
+	if ( !n1.inf && !n2.inf )  return n1.val > n2.val;
+	if ( n1.inf && !n2.inf ) return true;
+	if ( !n1.inf && n2.inf ) return false;
+	return false;
 }
 
-inline bool relax( std::uint32_t u, std::uint32_t v, map< std::uint32_t, Node > &dist, const vector< vector< std::int64_t > > &cost )
-{
-  auto new_w = dist[ u ] + cost[ u ][ v ];
-  auto &nodeV = dist[ v ];
-  if ( nodeV > new_w )
-  {
-    nodeV = new_w;
-    return true;
-  }
-  return false;
+inline bool relax(int u, int v, unordered_map<int, Vertex > &dist, const vector<vector<long long> > &cost ){
+	Vertex temp = dist[ u ] + cost[ u ][ v ];
+	Vertex &VertexV = dist[ v ];
+	if(VertexV > temp){
+		VertexV = temp;
+		return true;
+	}
+	return false;
 }
 
-void explore( const vector< vector< std::uint32_t > > &adj, vector< bool > &visited, std::uint32_t v )
-{
-  visited[ v ] = true;
-  const auto &es = adj[ v ];
-
-  for ( const auto &w : es )
-  {
-    if ( !visited[ w ] )
-    {
-      explore( adj, visited, w );
-    }
-  }
+void helper(vector<vector<int> > &adj, vector<bool> &visited, int v){
+	visited[v] = true;
+	vector<int> neighbor = adj[ v ];
+	for(int w : neighbor )
+		if (!visited[ w ])
+			helper(adj, visited, w);
 }
 
-std::set< std::uint32_t > bfs( vector< vector< std::uint32_t > > &adj, std::set< std::uint32_t > &from )
-{
-  std::set< std::uint32_t > infarbs;
-
-  for ( auto f : from )
-  {
-    std::vector< bool > visited( adj.size(), false );
-
-    explore( adj, visited, f );
-
-    for ( std::uint32_t i = 0; i < visited.size(); ++i )
-    {
-      if ( visited[ i ] )
-        infarbs.insert( i );
-    }
-  }
-  return infarbs;
+unordered_set<int> bfs(vector<vector<int> > &adj, unordered_set<int> &from){
+	unordered_set<int> uset;
+	for(int f : from ){
+		vector<bool> visited(adj.size(), false);
+		helper( adj, visited, f );
+		for (int i = 0; i < visited.size(); ++i )
+			if (visited[i])
+				uset.insert(i);
+	}
+	return uset;
 }
 
-std::tuple< std::set< std::uint32_t >, map< std::uint32_t, Node > >
-bellman_ford( vector< vector< std::uint32_t > > &adj, const vector< vector< std::int64_t > > &cost, std::uint32_t s )
-{
-  map< std::uint32_t, Node > dist;
-  for ( std::uint32_t i = 0; i < adj.size(); ++i )
-  {
-    dist[ i ] = Node();
-  }
-
-  dist[ s ] = Node( 0ll );
-
-  std::set< std::uint32_t > cycles;
-  const std::uint32_t V = adj.size();
-  for ( std::uint32_t i = 0; i < V; ++i )
-  {
-    for ( std::uint32_t j = 0; j < adj.size(); ++j )
-    {
-      std::uint32_t u = j;
-      const auto &es = adj[ u ];
-      for (std::uint32_t v : es )
-      {
-        if ( relax( u, v, dist, cost ) )
-        {
-          if ( i == ( V - 1 ) )
-          {
-            cycles.insert( v );
-          }
-        }
-      }
-    }
-  }
-
-  return std::make_tuple( bfs( adj, cycles ), dist );
+pair<unordered_set<int>, unordered_map<int, Vertex> >
+find_path(vector<vector<int> > &adj, vector<vector<long long> > &cost, int s){
+	unordered_map<int, Vertex> dist;
+  unordered_set<int> cycles;
+	for(int i = 0; i < adj.size(); ++i )
+		dist[i] = Vertex();
+	dist[s] = Vertex(0ll);
+	int size = adj.size();
+	for(int i = 0; i < size; ++i )
+		for (int j = 0; j < adj.size(); ++j )
+		{
+			int u = j;
+			vector<int> neighbor = adj[u];
+			for (int v : neighbor )
+				if (relax( u, v, dist, cost ) and i == (size - 1))
+						cycles.insert( v );
+		}
+	return {bfs( adj, cycles ), dist};
 }
 
-void shortest_paths( vector< vector< std::uint32_t > > &adj, const vector< vector< std::int64_t > > &cost, std::uint32_t s,
-                     vector< std::int64_t > &distance, vector< bool > &reachable, vector< bool > &shortest )
-{
-  std::set< std::uint32_t > cycles;
-  map< std::uint32_t, Node > dist;
-  std::tie( cycles, dist ) = bellman_ford( adj, cost, s );
-
-  for ( std::uint32_t i = 0; i < adj.size(); ++i )
-  {
-    if ( i == s )
-    {
-      reachable[ i ] = true;
-      distance[ i ] = 0ll;
-      continue;
-    }
-
-    reachable[ i ] = !dist[ i ].isinf;
-
-    if ( reachable[ i ] )
-    {
-      if ( cycles.find( i ) == cycles.end() )
-      {
-        distance[ i ] = dist[ i ].val;
-      }
-      else
-      {
-        shortest[ i ] = false;
-      }
-    }
-  }
+void shortest_paths(vector<vector<int> > &adj, vector<vector<long long> > &cost, int s,
+                     vector< long long > &distance, vector<bool> &reachable, vector<bool> &shortest ){
+	unordered_set<int> cycles;
+	unordered_map<int, Vertex > dist;
+	tie( cycles, dist ) = find_path( adj, cost, s );
+	for (int i = 0; i < adj.size(); ++i ){
+		if (i == s){
+			reachable[i] = true;
+			distance[i] = 0ll;
+			continue;
+		}
+		reachable[i] = !dist[ i ].inf;
+		if(reachable[i]){
+			if(cycles.find(i) == cycles.end())
+				distance[ i ] = dist[ i ].val;
+			else
+				shortest[ i ] = false;
+		}
+	}
 }
 
 int main()
 {
-  std::uint32_t n, m, s;
-  std::cin >> n >> m;
+	int n, m, s;
+	cin >> n >> m;
 
-  vector< vector< std::uint32_t > > adj( n, vector< std::uint32_t >() );
-  vector< vector< std::int64_t > > cost( n, vector< std::int64_t >( n, -1 ) );
+	vector< vector<int> > adj( n, vector<int>() );
+	vector< vector< long long > > cost( n, vector< long long >( n, -1 ) );
 
-  for ( std::uint32_t i = 0; i < m; i++ )
-  {
-    std::uint32_t x, y;
-    std::int64_t w;
-    std::cin >> x >> y >> w;
+	for (int i = 0; i < m; i++ )
+	{
+		int x, y;
+		long long w;
+		cin >> x >> y >> w;
 
-    adj[ x - 1 ].push_back( y - 1 );
-    cost[ x - 1 ][ y - 1 ] = w;
-  }
+		adj[ x - 1 ].push_back( y - 1 );
+		cost[ x - 1 ][ y - 1 ] = w;
+	}
 
-  std::cin >> s;
-  s--;
+	cin >> s;
+	s--;
 
-  vector< std::int64_t > distance( n, std::numeric_limits< std::int64_t >::max() );
-  vector< bool > reachable( n, false );
-  vector< bool > shortest( n, true );
-  shortest_paths( adj, cost, s, distance, reachable, shortest );
-  for ( std::uint32_t i = 0; i < n; i++ )
-  {
-    if ( !reachable[ i ] )
-    {
-      std::cout << "*\n";
-    }
-    else if ( !shortest[ i ] )
-    {
-      std::cout << "-\n";
-    }
-    else
-    {
-      std::cout << distance[ i ] << "\n";
-    }
-  }
+	vector< long long > distance( n, numeric_limits< long long >::max() );
+	vector< bool > reachable( n, false );
+	vector< bool > shortest( n, true );
+	shortest_paths( adj, cost, s, distance, reachable, shortest );
+	for ( long long i = 0; i < n; i++ )
+	{
+		if ( !reachable[ i ] )
+		{
+			cout << "*\n";
+		}
+		else if ( !shortest[ i ] )
+		{
+			cout << "-\n";
+		}
+		else
+		{
+			cout << distance[ i ] << "\n";
+		}
+	}
 
-  return 0;
+	return 0;
 }
