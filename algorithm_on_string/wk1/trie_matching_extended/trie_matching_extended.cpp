@@ -14,7 +14,6 @@ struct Node
 {
 	int next [Letters];
 	bool patternEnd;
-
 	Node ()
 	{
 		fill (next, next + Letters, NA);
@@ -22,31 +21,77 @@ struct Node
 	}
 };
 
+typedef vector<Node> trie;
+
 int letterToIndex (char letter)
 {
 	switch (letter)
 	{
-		case 'A': return 0; break;
-		case 'C': return 1; break;
-		case 'G': return 2; break;
-		case 'T': return 3; break;
-		default: assert (false); return -1;
+	case 'A': return 0; break;
+	case 'C': return 1; break;
+	case 'G': return 2; break;
+	case 'T': return 3; break;
+	default: cout << letter << endl; assert (false); return -1;
 	}
 }
 
-vector <int> solve (string text, int n, vector <string> patterns)
+trie build_trie(const vector<string> & patterns) {
+  trie t;
+  Node root;
+  t.push_back(root);
+  for(const string& p : patterns){
+  	size_t cur_node = 0;
+  	for(size_t i = 0; i < p.length(); ++i){
+  		size_t next_i = letterToIndex(p[i]);
+  		if(t[cur_node].next[next_i] != NA)
+  			cur_node = t[cur_node].next[next_i];
+  		else{
+  			Node tmp;
+  			t.push_back(tmp);
+  			t[cur_node].next[next_i] = t.size()-1;
+  			cur_node = t[cur_node].next[next_i];
+  		}
+  	}
+  	t[cur_node].patternEnd = true;
+  }
+  return t;
+}
+
+vector <int> solve (const string& text, int n, const vector <string>& patterns)
 {
 	vector <int> result;
-
-	// write your code here
-
+	trie t = build_trie(patterns);
+	// for (size_t i = 0; i < t.size(); ++i) {
+	// 	for(size_t j = 0; j < Letters; ++j)
+ //    		if( t[i].next[j] != NA)
+ //      			std::cout << i << "->" << j << ":" << t[i].next[j] << "\n";
+ //      	if(t[i].isLeaf())
+ //      			std::cout << i << "leafNode\n";
+ //    }
+	for(size_t i = 0; i < text.length(); ++i){
+		size_t cur_node = 0;
+		size_t cur_symb = i;
+		while(true){
+			if(t[cur_node].patternEnd){
+				result.push_back(i);
+				break;
+			}
+			else if(cur_symb < text.length() and t[cur_node].next[letterToIndex(text[cur_symb])] != NA){
+				cur_node = t[cur_node].next[letterToIndex(text[cur_symb])];
+				cur_symb++;
+				// cout << cur_symb << " " << text[cur_symb] << endl;
+			}
+			else
+				break;
+		}
+	}
 	return result;
 }
 
 int main (void)
 {
 	string t;
-	cin >> text;
+	cin >> t;
 
 	int n;
 	cin >> n;
@@ -58,7 +103,7 @@ int main (void)
 	}
 
 	vector <int> ans;
-	ans = solve (t, n, s);
+	ans = solve (t, n, patterns);
 
 	for (int i = 0; i < (int) ans.size (); i++)
 	{
